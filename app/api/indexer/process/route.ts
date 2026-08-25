@@ -1,0 +1,74 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { submitToIndexNow } from "@/lib/indexer/indexNow";
+import { pingSitemap } from "@/lib/indexer/pingSitemap";
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+
+    const pendingLinks = await db.link.findMany({
+      where: { userId, status: "pending" },
+      take: 20,
+    });
+
+    if (pendingLinks.length === 0) {
+      return NextResponse.json({
+        message: "No pending links to process",
+        processed: 0,
+      });
+    }
+
+    let indexedCount = 0;
+    let failedCount = 0;
+
+    for (const link of pendingLinks) {
+      await db.link.update({
+        where: { id: link.id },
+        data: { status: "processing" },
+      });
+
+      // 1. Submit to IndexNow (Bing/Yandex - instant)
+      const indexNowResult = await submitToIndexNow(link.url);
+
+      if (indexNowResult.success) {
+        await db.link.update({
+          where: { id: link.id },
+          data: { status: "indexed", indexedAt: new Date() },
+        });
+        indexedCount++;
+      } else {
+        await db.link.update({
+          where: { id: link.id },
+          data: { status: "failed" },
+        });
+        failedCount++;
+      }
+    }
+
+    // 2. Ping sitemap so crawlers re-visit the discover page
+    // (the discover page now contains backlinks to these new URLs)
+    await pingSitemap();
+
+    return NextResponse.json({
+      message: "Processing complete",
+      processed: pendingLinks.length,
+      indexed: indexedCount,
+      failed: failedCount,
+    });
+  } catch (error) {
+    console.error("Indexer process error:", error);
+    return NextResponse.json(
+      { error: "Something went wrong while processing links" },
+      { status: 500 }
+    );
+  }
+}
