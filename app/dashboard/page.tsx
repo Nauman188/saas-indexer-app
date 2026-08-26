@@ -135,7 +135,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {recentLinks.map((link) => {
+            {recentLinks.map((link: any) => {
               const statusClass = link.status === "indexed" ? "badge-indexed" : link.status === "failed" ? "badge-failed" : link.status === "processing" ? "badge-processing" : "badge-pending";
               return (
                 <div key={link.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-white/[0.02] transition-colors">
