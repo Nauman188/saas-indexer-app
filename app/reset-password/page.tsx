@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthCard from "@/components/AuthCard";
 
-export default function ResetPasswordPage() {
+// Humne purane function ka naam change kar ke 'ResetPasswordForm' rakh diya
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -110,5 +111,14 @@ export default function ResetPasswordPage() {
         </Link>
       </p>
     </AuthCard>
+  );
+}
+
+// Naya main function jo Suspense use karta hai
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="text-white text-center mt-20">Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
