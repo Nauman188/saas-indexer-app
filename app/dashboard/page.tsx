@@ -134,7 +134,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-2">git add .
+          <div className="space-y-2">
             {recentLinks.map((link: any) => {
               const statusClass = link.status === "indexed" ? "badge-indexed" : link.status === "failed" ? "badge-failed" : link.status === "processing" ? "badge-processing" : "badge-pending";
               return (
