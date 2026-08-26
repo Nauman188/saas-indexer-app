@@ -13,7 +13,7 @@ export default async function DiscoverPage() {
         <div className="auth-card rounded-xl p-6 mt-8">
           <h2 className="text-lg font-semibold text-white mb-6">Recently Submitted Pages</h2>
           <ul className="divide-y divide-white/5">
-            {links.map((link: any, i) => (
+            {links.map((link: any, i: number) => (
               <li key={i} className="py-3">
                 <a href={link.url} rel="noopener" className="text-indigo-400 break-all text-sm">{link.url}</a>
               </li>
