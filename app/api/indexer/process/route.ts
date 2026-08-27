@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { submitToIndexNow } from "@/lib/indexer/indexNow";
 import { pingSitemap } from "@/lib/indexer/pingSitemap";
+import { pingFeeds } from "@/lib/indexer/pingFeeds";
 
 export async function POST(req: Request) {
   try {
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
         data: { status: "processing" },
       });
 
-      // 1. Submit to IndexNow (Bing/Yandex - instant)
+      // 1. Submit to IndexNow (Bing/Yandex)
       const indexNowResult = await submitToIndexNow(link.url);
 
       if (indexNowResult.success) {
@@ -54,9 +55,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Ping sitemap so crawlers re-visit the discover page
-    // (the discover page now contains backlinks to these new URLs)
+    // 2. Ping sitemap
     await pingSitemap();
+
+    // 3. Ping RSS feeds + aggregators
+    await pingFeeds();
 
     return NextResponse.json({
       message: "Processing complete",
