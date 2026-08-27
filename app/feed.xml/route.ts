@@ -8,8 +8,8 @@ export async function GET() {
     select: { url: true, createdAt: true },
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://saas-indexer-app.vercel.app";
-
+  const baseUrl = "https://saas-indexer-app.vercel.app";
+  
   const rssItems = links.map((link) => {
     const pubDate = new Date(link.createdAt).toUTCString();
     const escapedUrl = link.url
