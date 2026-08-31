@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { submitToIndexNow } from "@/lib/indexer/indexNow";
+import { submitToGoogle } from "@/lib/indexer/googleIndexing";
 import { pingSitemap } from "@/lib/indexer/pingSitemap";
 import { pingFeeds } from "@/lib/indexer/pingFeeds";
 
@@ -37,10 +38,14 @@ export async function POST(req: Request) {
         data: { status: "processing" },
       });
 
-      // 1. Submit to IndexNow (Bing/Yandex)
+      // 1. Submit to Google Indexing API
+      const googleResult = await submitToGoogle(link.url);
+
+      // 2. Submit to IndexNow (Bing/Yandex)
       const indexNowResult = await submitToIndexNow(link.url);
 
-      if (indexNowResult.success) {
+      // If either succeeds, mark as indexed
+      if (googleResult.success || indexNowResult.success) {
         await db.link.update({
           where: { id: link.id },
           data: { status: "indexed", indexedAt: new Date() },
@@ -55,10 +60,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Ping sitemap
+    // 3. Ping sitemap
     await pingSitemap();
 
-    // 3. Ping RSS feeds + aggregators
+    // 4. Ping RSS feeds
     await pingFeeds();
 
     return NextResponse.json({
