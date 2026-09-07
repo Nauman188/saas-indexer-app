@@ -9,7 +9,7 @@ export async function GET() {
   });
 
   const baseUrl = "https://saas-indexer-app.vercel.app";
-  
+
   const rssItems = links.map((link) => {
     const pubDate = new Date(link.createdAt).toUTCString();
     const escapedUrl = link.url
@@ -17,8 +17,7 @@ export async function GET() {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-    return `
-    <item>
+    return `<item>
       <title>${escapedUrl}</title>
       <link>${escapedUrl}</link>
       <guid isPermaLink="true">${escapedUrl}</guid>
