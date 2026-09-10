@@ -11,7 +11,7 @@ export async function submitToIndexNow(url: string): Promise<IndexNowResult> {
     // Method 1: IndexNow API (Bing + Yandex)
     const indexNowResponse = await fetch(
       `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`,
-      { method: "GET" }
+      { method: "GET" },
     );
 
     console.log(`IndexNow response for ${url}: ${indexNowResponse.status}`);
@@ -24,9 +24,9 @@ export async function submitToIndexNow(url: string): Promise<IndexNowResult> {
         headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({
           siteUrl: "https://saas-indexer-app.vercel.app",
-          url: url,
+          urlList: [url],
         }),
-      }
+      },
     );
 
     console.log(`Bing API response for ${url}: ${bingResponse.status}`);
