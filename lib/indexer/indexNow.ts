@@ -1,6 +1,3 @@
-// IndexNow protocol - instantly notifies Bing/Yandex about new/updated URLs
-// Docs: https://www.indexnow.org/
-
 interface IndexNowResult {
   success: boolean;
   statusCode?: number;
@@ -9,56 +6,49 @@ interface IndexNowResult {
 
 export async function submitToIndexNow(url: string): Promise<IndexNowResult> {
   try {
-    const parsedUrl = new URL(url);
-    const host = parsedUrl.hostname;
+    const indexNowKey = "5fb0c29e3b394eb3adea776e31c02c99";
 
-    // IndexNow endpoint accepts submissions for any host,
-    // search engines verify ownership independently before crawling
-    const endpoint = "https://api.indexnow.org/indexnow";
+    // Method 1: IndexNow API (Bing + Yandex)
+    const indexNowResponse = await fetch(
+      `https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=${indexNowKey}`,
+      { method: "GET" }
+    );
 
-    const params = new URLSearchParams({
-      url: url,
-      key: process.env.INDEXNOW_API_KEY || "",
-    });
+    console.log(`IndexNow response for ${url}: ${indexNowResponse.status}`);
 
-    const response = await fetch(`${endpoint}?${params.toString()}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    // Method 2: Bing Submission API (direct)
+    const bingResponse = await fetch(
+      `https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl?apikey=${process.env.BING_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          siteUrl: "https://saas-indexer-app.vercel.app",
+          url: url,
+        }),
+      }
+    );
 
-    // IndexNow returns 200 (submitted) or 202 (accepted, pending validation)
-    if (response.status === 200 || response.status === 202) {
-      return { success: true, statusCode: response.status };
+    console.log(`Bing API response for ${url}: ${bingResponse.status}`);
+
+    if (
+      indexNowResponse.status === 200 ||
+      indexNowResponse.status === 202 ||
+      bingResponse.status === 200
+    ) {
+      return { success: true, statusCode: indexNowResponse.status };
     }
 
     return {
       success: false,
-      statusCode: response.status,
-      error: `IndexNow returned status ${response.status}`,
+      statusCode: indexNowResponse.status,
+      error: `IndexNow: ${indexNowResponse.status}, Bing: ${bingResponse.status}`,
     };
   } catch (error) {
+    console.error("IndexNow/Bing submit error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }
-}
-
-// Bulk submit multiple URLs (IndexNow also supports batch submission per host)
-export async function submitBatchToIndexNow(
-  urls: string[]
-): Promise<{ url: string; result: IndexNowResult }[]> {
-  const results = [];
-
-  for (const url of urls) {
-    const result = await submitToIndexNow(url);
-    results.push({ url, result });
-
-    // Small delay to avoid rate limiting
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }
-
-  return results;
 }
